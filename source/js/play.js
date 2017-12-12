@@ -46,6 +46,7 @@ const playState = {
 
         boxes = game.add.group();
         boxes.enableBody = true;
+        boxes.physicsBodyType = Phaser.Physics.ARCADE;
         map.createFromObjects('object-layer', 34, 'box', 0, true, false, boxes);
         boxes.setAll('body.immovable', true);
         boxes.setAll('body.moves', false);
@@ -156,6 +157,7 @@ var Player = function (x, y, spriteName) {
     this.body.gravity.y = 600;
     this.body.bounce.y = 0.2;
     this.body.collideWorldBounds = true;
+    this.body.immovable = true;
     this.body.setSize(40,64,24);
 
     this.animations.add('right', [0,1,2,3,4,5,6,7,8,9,10,11,12,13], 50);
