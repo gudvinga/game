@@ -20,8 +20,6 @@ const playState = {
         cursors = game.input.keyboard.createCursorKeys();
         fireButton = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
 
-        healthText = game.add.text(32, 50, 'health: 0', { font: "20px Arial", fill: "#ffffff", align: "left" });
-
         bullets = game.add.group();
         bullets.enableBody = true;
         bullets.physicsBodyType = Phaser.Physics.ARCADE;
@@ -55,6 +53,7 @@ const playState = {
         player = new Player(0, 640, 'player');
         game.world.add(player);
         enemies = game.add.group();
+        healthText = game.add.text(32, 50, 'health: 0', { font: "20px Arial", fill: "#ffffff", align: "left" });
 
         addZombie = setInterval(addEnemie, 3000);
 
