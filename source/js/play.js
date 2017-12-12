@@ -34,7 +34,7 @@ const playState = {
         map = game.add.tilemap('levels-map');
         map.addTilesetImage('tiles-for-map', 'tiles');
         map.setCollisionBetween(1, 34);
-        // map.setTileIndexCallback(24, playState.win, this);
+        map.setTileIndexCallback(24, playState.win, this);
 
         layer = map.createLayer('ground-layer');
         layer2 = map.createLayer('image-layer');
@@ -42,7 +42,6 @@ const playState = {
 
         coins = game.add.group();
         coins.enableBody = true;
-        coins.physicsBodyType = Phaser.Physics.ARCADE;
         map.createFromObjects('object-layer', 39, 'coin', 0, true, false, coins);
         coins.callAll('animations.add', 'animations', 'spin', [0, 1, 2, 3, 4, 5,6,7,8,9], 20, true);
         coins.callAll('animations.play', 'animations', 'spin');
@@ -146,10 +145,6 @@ Enemy.prototype.update = function() {
     }
 
 
-    if (this.body.touching.down) {
-        this.kill();
-    }
-
 }
 
 var Player = function (x, y, spriteName) {
@@ -172,6 +167,8 @@ var Player = function (x, y, spriteName) {
     this.animations.add('fire-left', [53,54,55,56], 30);
     this.animations.add('walk-fire-left', [57,58,59,60,61,62,63,64,65,66,67,68,69], 50);
     this.animations.add('idle-left', [70,71,72,73,74,75,76,77], 10);
+    this.animations.add('attaked-left', [78,79], 5);
+    this.animations.add('attaked-right', [80,81], 5);
 
     this.side = 'left';
 };
@@ -227,12 +224,11 @@ Player.prototype.update = function() {
         this.secondjump = false;
     }
 
-
     healthText.text = 'health:' + this.health;
     healthText.fixedToCamera = true;
     healthText.cameraOffset.setTo(32, 5);
 
-    if (this.health < 0) {
+    if (this.health < 1) {
         this.kill();
         this.reset(0,640);
         this.health = 100;
@@ -288,6 +284,10 @@ function killEnemy(bullet, enemy) {
 
     bullet.kill();
 
+    if (enemy.body.touching.down) {
+        enemy.kill();
+    }
+
     if (enemy.health < 1) {
         enemy.kill();
     }
@@ -296,7 +296,7 @@ function killEnemy(bullet, enemy) {
 function hitCoin(player, coin) {
     coin.kill();
     pping.play();
-    return true;
+    return false;
 }
 
 function destroyBox(bullet, box) {
