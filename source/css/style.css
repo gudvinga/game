@@ -25,6 +25,7 @@ a {
 
 .header {
     min-height: 860px;
+    min-width: 960px;
     box-sizing: border-box;
     height: auto;
     background-image: url(../img/header-bg.jpg);

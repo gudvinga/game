@@ -1,8 +1,16 @@
 let enemies;
 let temp = [];
 let somegroup;
-let healthText;
-let player, shoot, background, coins, addZombie;
+let player, background, coins, addZombie, fonts;
+let enemyDead, ahh, shoot, pping;
+let coinsCount = 0, 
+    enemiesCount = 0,
+    score = 0;
+let healthText,
+    scoreText,
+    livesText,
+    coinsText,
+    enemiesText;
 
 const playState = {
     create: function() {
@@ -12,6 +20,8 @@ const playState = {
 
         shoot = game.add.audio('shoot');
         pping = game.add.audio('pping');
+        enemyDead = game.add.audio('enemyDead');
+        ahh = game.add.audio('ahh');
         wickedDreams = game.add.audio('wickedDreams');
 
         wickedDreams.play();
@@ -29,10 +39,11 @@ const playState = {
         bullets.setAll('outOfBoundsKill', true);
         bullets.setAll('checkWorldBounds', true);
 
+        aids = game.add.group();
+
         map = game.add.tilemap('levels-map');
         map.addTilesetImage('tiles-for-map', 'tiles');
         map.setCollisionBetween(1, 34);
-        map.setTileIndexCallback(24, playState.win, this);
 
         layer = map.createLayer('ground-layer');
         layer2 = map.createLayer('image-layer');
@@ -50,10 +61,26 @@ const playState = {
         boxes.setAll('body.immovable', true);
         boxes.setAll('body.moves', false);
 
+        blood = game.add.group();
+
         player = new Player(0, 640, 'player');
         game.world.add(player);
         enemies = game.add.group();
-        healthText = game.add.text(32, 50, 'health: 0', { font: "20px Arial", fill: "#ffffff", align: "left" });
+
+        const fontStyle = { font: "20px Arial", fill: "#ffffff", align: "left" };
+
+        healthText = game.add.text(32, 560, 'health: 0', fontStyle);
+        scoreText = game.add.text(32, 580, 'score: 0', fontStyle);
+        livesText = game.add.text(32, 600, 'lives: 0', fontStyle);
+        coinsText = game.add.text(300, 560, 'coins: 0', fontStyle);
+        enemiesText = game.add.text(300, 580, 'zombies: 0', fontStyle);
+
+        scoreText.fixedToCamera = true;
+        livesText.fixedToCamera = true;
+        healthText.fixedToCamera = true;
+        coinsText.fixedToCamera = true;
+        enemiesText.fixedToCamera = true;
+        // healthText.cameraOffset.setTo(32, 5);
 
         addZombie = setInterval(addEnemie, 3000);
 
@@ -62,14 +89,24 @@ const playState = {
     },
 
     update: function() {
-        game.physics.arcade.collide(player, coins, hitCoin);
+        game.physics.arcade.collide(player, coins, hitCoin, null, this);
         game.physics.arcade.collide(bullets, enemies, killEnemy, null, this);
         game.physics.arcade.collide(bullets, boxes, destroyBox, null, this);
         game.physics.arcade.collide(player, [layer, boxes]);
         game.physics.arcade.collide(player, enemies, playerAttacked, null, this);
-        game.physics.arcade.collide(enemies, layer);
+        game.physics.arcade.collide(player, aids, useAid, null, this);
+        game.physics.arcade.collide([aids, enemies], layer);
         game.physics.arcade.collide(enemies, boxes, reversEnemy, null, this);
         game.physics.arcade.collide(bullets, layer, killBullet, null, this);
+
+        healthText.text = 'health:' + player.health;
+        scoreText.text = 'score:' + score;
+        livesText.text = 'lives:' + player.lives;
+        coinsText.text = 'coins:' + coinsCount;
+        enemiesText.text = 'zombie:' + enemiesCount;
+
+        addAid();
+        win();
     },
 
     win: function() {
@@ -132,10 +169,6 @@ Enemy.prototype.update = function() {
         this.curentVelocity = this.velocity;
     } 
     
-    if (this.body.touching.up) {
-        this.kill();
-    }
-
     if (this.body.velocity.x > 0) {
         this.animation = 'right';
     }
@@ -223,10 +256,6 @@ Player.prototype.update = function() {
         this.secondjump = false;
     }
 
-    healthText.text = 'health:' + this.health;
-    healthText.fixedToCamera = true;
-    healthText.cameraOffset.setTo(32, 5);
-
     if (this.health < 1) {
         this.kill();
         this.reset(0,640);
@@ -239,6 +268,35 @@ Player.prototype.update = function() {
     }
 
 };
+
+function Blood(x, y) {
+    Phaser.Sprite.call(this, game, x, y, 'blood');
+    this.animations.add('blood', [0,1,2,3,4,5], 10);
+    this.animations.play('blood');
+}
+Blood.prototype = Object.create(Phaser.Sprite.prototype);
+Blood.prototype.constructor = Blood;
+
+function Aid(x, y) {
+    Phaser.Sprite.call(this, game, x, y, 'aid');
+    game.physics.enable(this, Phaser.Physics.ARCADE);
+    this.animations.add('aid', [0, 1, 2, 3, 4, 5], 10);
+    this.animations.play('aid');
+
+    this.body.gravity.y = 300;
+    this.body.bounce.y = 0.5;
+    this.body.collideWorldBounds = true;
+}
+Aid.prototype = Object.create(Phaser.Sprite.prototype);
+Aid.prototype.constructor = Aid;
+
+function createBlood(x,y) {
+    var temp = new Blood(x,y);
+    blood.add(temp);
+    setTimeout(() => {
+        temp.kill();
+    }, 500);
+}
 
 var count = 0;
 
@@ -270,6 +328,8 @@ function fireBullet(bulletSpead, x) {
 
 function killEnemy(bullet, enemy) {
     enemy.health--;
+    createBlood(enemy.x + 0, enemy.y + 18);
+
 
     if (enemy.body.touching.left) {
         enemy.curentVelocity = -enemy.velocity;
@@ -289,13 +349,17 @@ function killEnemy(bullet, enemy) {
 
     if (enemy.health < 1) {
         enemy.kill();
+        enemyDead.play();
+        enemiesCount++;
+        score += 10;
     }
 };
 
 function hitCoin(player, coin) {
     coin.kill();
     pping.play();
-    return false;
+    coinsCount++;
+    score += 5;
 }
 
 function destroyBox(bullet, box) {
@@ -303,10 +367,8 @@ function destroyBox(bullet, box) {
     bullet.kill();
     shoot.play();
 
-    var boom = new Enemy(box.body.x, box.body.y, 'enemy', 80, count);
+    var boom = new Enemy(box.body.x, box.body.y - 30, 'enemy', 80, count);
     enemies.add(boom);
-    boom.kill();
-    boom.reset(box.body.x, box.body.y-30);
 }
 
 function killBullet(bullet, tile) {
@@ -323,9 +385,69 @@ function reversEnemy(enemy, box) {
     
     if (enemy.body.touching.down) {
         enemy.curentVelocity = enemy.velocity;
+        if (enemy.velocity.x == 0) {
+            enemy.x += 32;
+        }
     }
 }
 
 function playerAttacked(player, enemy) {
-    player.health--;
+
+    if (enemy.body.touching.up) {
+        enemy.kill();
+        enemyDead.play();
+        createBlood(enemy.x + 0, enemy.y + 18);
+        enemiesCount++;
+        score += 10;     
+    }
+    else if (enemy.body.touching.down) {
+        player.health -= 10;
+        player.body.velocity.y = -100;
+        enemy.kill();
+        enemyDead.play();
+        playSoundFull(ahh, 500);
+        createBlood(enemy.x + 0, enemy.y + 18);
+        enemiesCount++;
+    }
+    else {
+        player.health--;
+        playSoundFull(ahh, 500);
+    }
+}
+
+function playSoundFull(sound, duration) {
+    if (!sound.isPlaying) {
+        sound.play();
+        setTimeout(() => {
+            sound.stop()
+        }, duration);
+    }
+}
+
+var createAid = false;
+function addAid() {
+    if (score % 500 < 15 && score != 0 && createAid) {
+        var aid = new Aid(player.x + 100 - 200 * Math.random(), player.y - 200 * Math.random());
+            aids.add(aid);
+            createAid = false;
+    }
+
+    if (score % 500 > 100) {
+        createAid = true;
+    }
+}
+
+function useAid(player, aid) {
+    player.health += 30;
+    if (player.health > 100) {
+        player.health = 100;
+    }
+
+    aid.kill();
+}
+
+function win() {
+    if (player.x > 3130 & player.y > 860) {
+        playState.win();
+    }
 }
