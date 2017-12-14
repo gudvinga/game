@@ -1,15 +1,16 @@
 const menuState = {
     create: function() {
         let nameLabel,
-            startLabel,
+            startButton,
             startKey;
 
         game.world.setBounds(0, 0, game.width, game.height);
-        nameLabel = game.add.text(game.world.centerX, game.world.centerY - 80,'Rolling Scope School Game', {font: '30px Tahoma', fill: '#ffffff'});
-        startLabel = game.add.text(game.world.centerX, game.world.centerY, 'Start', { font: '30px Tahoma', fill: '#ffffff' });
+        background = game.add.sprite(0, 0, 'menu-bg');
+        nameLabel = game.add.text(game.world.centerX, game.world.centerY - 90, 'Special for The Rolling Scopes School', { font: '18px Tahoma', fill: '#92a5a9'});
+        startButton = game.add.button(game.world.centerX-100, game.world.centerY+60, 'startButton', actionOnClick, this, 0, 1);
                 
-        startLabel.inputEnabled = true;
-        startLabel.events.onInputDown.add(() => game.state.start('play'), this);  
-
+        function actionOnClick() {
+            game.state.start('play');  
+        }
     }
 }

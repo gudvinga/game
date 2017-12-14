@@ -6,6 +6,7 @@ const loadState = {
         game.load.image('bg', 'source/img/bg.jpg');
         game.load.image('bg-lose', 'source/img/bg-lose.jpg');
         game.load.image('bullet', 'source/img/bullet.png');
+        game.load.image('menu-bg', 'source/img/menu-bg.jpg');
 
         game.load.audio('shoot', 'source/audio/explosion.mp3');
         game.load.audio('pping', 'source/audio/p-ping.mp3');
@@ -19,6 +20,8 @@ const loadState = {
         game.load.spritesheet('box', 'source/img/box.png', 32, 32);
         game.load.spritesheet('blood', 'source/img/blood.png', 32, 32);
         game.load.spritesheet('aid', 'source/img/aid.png',32,32);
+        game.load.spritesheet('startButton', 'source/img/start-button.png', 207, 102);
+        game.load.spritesheet('restartButton', 'source/img/restart-button.png', 207, 102);
 
         game.load.tilemap('levels-map', 'source/maps/levels-map.json', null, Phaser.Tilemap.TILED_JSON);
         
