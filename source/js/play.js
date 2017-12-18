@@ -2,24 +2,64 @@ let enemies;
 let temp = [];
 let somegroup;
 let player, background, coins, addZombie, fonts;
-let enemyDead, ahh, shoot, pping;
-let coinsCount = 0, 
-    enemiesCount = 0,
-    score = 0;
+let enemyDead, ahh, shoot, pping, useaid;
+let coinsCount, 
+    enemiesCount,
+    score;
 let healthText,
     scoreText,
     livesText,
     coinsText,
     enemiesText;
 
+function gameInit() {
+    coinsCount = 0;
+    enemiesCount = 0;
+    score = 0;
+}
+
+const enemyCharacter = {
+    '0' : {
+        sprite: 'enemy',
+        velocity: 60,
+        velocityY: 0,
+        health: 3,
+        score: 20
+    },
+    '1': {
+        sprite: 'enemyJumper',
+        velocity: 80,
+        velocityY: 250,
+        health: 2,
+        score: 50
+    },
+    '2': {
+        sprite: 'enemySlow',
+        velocity: 40,
+        velocityY: 0,
+        health: 10,
+        score: 100
+    },
+    '3': {
+        sprite: 'enemyFast',
+        velocity: 200,
+        velocityY: 0,
+        health: 1,
+        score: 20
+    },
+}
+
 const playState = {
     create: function() {
+        gameInit();
+
         game.physics.startSystem(Phaser.Physics.ARCADE);
         background = game.add.sprite(0,0,'bg');
         background.fixedToCamera = true;
 
         shoot = game.add.audio('shoot');
         pping = game.add.audio('pping');
+        useaid = game.add.audio('useaid');
         enemyDead = game.add.audio('enemyDead');
         ahh = game.add.audio('ahh');
         wickedDreams = game.add.audio('wickedDreams');
@@ -29,17 +69,6 @@ const playState = {
 
         cursors = game.input.keyboard.createCursorKeys();
         fireButton = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
-
-        bullets = game.add.group();
-        bullets.enableBody = true;
-        bullets.physicsBodyType = Phaser.Physics.ARCADE;
-        bullets.createMultiple(30, 'bullet', 0, false);
-        bullets.setAll('anchor.x', 0.5);
-        bullets.setAll('anchor.y', 0.5);
-        bullets.setAll('outOfBoundsKill', true);
-        bullets.setAll('checkWorldBounds', true);
-
-        aids = game.add.group();
 
         map = game.add.tilemap('levels-map');
         map.addTilesetImage('tiles-for-map', 'tiles');
@@ -61,7 +90,17 @@ const playState = {
         boxes.setAll('body.immovable', true);
         boxes.setAll('body.moves', false);
 
+        bullets = game.add.group();
+        bullets.enableBody = true;
+        bullets.physicsBodyType = Phaser.Physics.ARCADE;
+        bullets.createMultiple(30, 'bullet', 0, false);
+        bullets.setAll('anchor.x', 0.5);
+        bullets.setAll('anchor.y', 0.5);
+        bullets.setAll('outOfBoundsKill', true);
+        bullets.setAll('checkWorldBounds', true);
+
         blood = game.add.group();
+        aids = game.add.group();
 
         player = new Player(0, 640, 'player');
         game.world.add(player);
@@ -69,20 +108,32 @@ const playState = {
 
         const fontStyle = { font: "20px Arial", fill: "#ffffff", align: "left" };
 
-        healthText = game.add.text(32, 560, 'health: 0', fontStyle);
-        scoreText = game.add.text(32, 580, 'score: 0', fontStyle);
-        livesText = game.add.text(32, 600, 'lives: 0', fontStyle);
-        coinsText = game.add.text(300, 560, 'coins: 0', fontStyle);
-        enemiesText = game.add.text(300, 580, 'zombies: 0', fontStyle);
+        healthImg = game.add.sprite(32, 530, 'health-bg');
+        // scoreImg = game.add.sprite(320, 535, 'score-bg');
+        livesImg = game.add.sprite(32, 585, 'lives-bg');
+        coinsImg = game.add.sprite(780, 530, 'coins-bg' );
+        enemiesImg = game.add.sprite(780, 585, 'zombie-bg');
+
+        healthText = game.add.text(100, 543, '0', fontStyle);
+        scoreText = game.add.text(32, 32, '0', { font: "26px Arial", fill: "#ffffff", align: "center" });
+        livesText = game.add.text(100, 598, '0', fontStyle);
+        coinsText = game.add.text(810, 543, '0', fontStyle);
+        enemiesText = game.add.text(810, 598, '0', fontStyle);
 
         scoreText.fixedToCamera = true;
         livesText.fixedToCamera = true;
         healthText.fixedToCamera = true;
         coinsText.fixedToCamera = true;
         enemiesText.fixedToCamera = true;
-        // healthText.cameraOffset.setTo(32, 5);
 
-        addZombie = setInterval(addEnemie, 3000);
+        healthImg.fixedToCamera = true;
+        //scoreImg.fixedToCamera = true;
+        livesImg.fixedToCamera = true;
+        coinsImg.fixedToCamera = true;
+        enemiesImg.fixedToCamera = true;
+
+        addZombie = 0; //temporary
+        game.time.events.repeat(Phaser.Timer.SECOND * 3, Infinity, addEnemie, this);
 
         game.camera.follow(player);
 
@@ -99,11 +150,11 @@ const playState = {
         game.physics.arcade.collide(enemies, boxes, reversEnemy, null, this);
         game.physics.arcade.collide(bullets, layer, killBullet, null, this);
 
-        healthText.text = 'health:' + player.health;
-        scoreText.text = 'score:' + score;
-        livesText.text = 'lives:' + player.lives;
-        coinsText.text = 'coins:' + coinsCount;
-        enemiesText.text = 'zombie:' + enemiesCount;
+        healthText.text = player.health;
+        scoreText.text = 'SCORE: ' + score;
+        livesText.text = player.lives;
+        coinsText.text = coinsCount;
+        enemiesText.text = enemiesCount;
 
         addAid();
         win();
@@ -122,176 +173,167 @@ const playState = {
     }
 };
 
-var Enemy = function(x, y, spriteName, velocity, index) {
-    Phaser.Sprite.call(this, game, x, y, spriteName);
-    game.physics.enable(this, Phaser.Physics.ARCADE);
+class Enemy extends Phaser.Sprite {
+    constructor(x, y, spriteName, velocity, velocityY, health, score) {
+        super(game, x, y, spriteName);
+        game.physics.enable(this, Phaser.Physics.ARCADE);
 
-    this.name = 'enemy_' + index;
-    this.firstTouch = true;
+        this.body.gravity.y = 600;
+        this.body.bounce.y = 0.2;
+        this.body.collideWorldBounds = true;
 
-    this.health = 3;
+        this.animations.add('right', [12, 13, 14, 15, 16, 17, 18, 19, 20], 10);
+        this.animations.add('left', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 10);
+        this.animation = 0;
+        this.frame = 4;
 
-    this.body.gravity.y = 600;
-    this.body.bounce.y = 0.2;
-    this.body.collideWorldBounds = true;
-
-    this.animations.add('right', [12,13,14,15,16,17,18,19,20], 10);
-    this.animations.add('left', [0, 1, 2, 3,4,5,6,7,8,9], 10);
-
-    // this.animations.add('right', [6, 7, 8, 9, 10, 11], 5);
-    // this.animations.add('left', [0, 1, 2, 3, 4, 5], 5);
-
-    this.animation = 0;
-    this.frame = 4;
-    this.velocity = velocity;
-    this.curentVelocity = 0;
-    this.ccount = 0;
-};
-
-Enemy.prototype = Object.create(Phaser.Sprite.prototype);
-Enemy.prototype.constructor = Enemy;
-
-Enemy.prototype.update = function() { 
-    this.animations.play(this.animation);
-
-    this.body.velocity.x = this.curentVelocity
-    
-    if (this.body.blocked.down && this.firstTouch) {
-        this.curentVelocity = this.velocity;
-        this.firstTouch = false;
-    } 
-
-    if (this.body.blocked.right) {
-        this.curentVelocity = -this.velocity;
+        this.velocity = velocity;
+        this.velocityY = velocityY;
+        this.curentVelocity = 0;
+        this.firstTouch = true;
+        this.health = health;
+        this.score = score; 
     }
 
-    if (this.body.blocked.left) {
-        this.curentVelocity = this.velocity;
-    } 
-    
-    if (this.body.velocity.x > 0) {
-        this.animation = 'right';
-    }
-    else {
-        this.animation = 'left'
-    }
+    update() {
+        this.animations.play(this.animation);
 
+        this.body.velocity.x = this.curentVelocity;
 
+        if(this.body.blocked.down) {
+            this.body.velocity.y = -this.velocityY;
+        }
+
+        if (this.body.blocked.down && this.firstTouch) {
+            this.curentVelocity = this.velocity;
+            this.firstTouch = false;
+        }
+
+        if (this.body.blocked.right) {
+            this.curentVelocity = -this.velocity;
+        }
+
+        if (this.body.blocked.left) {
+            this.curentVelocity = this.velocity;
+        }
+
+        if (this.body.velocity.x > 0) {
+            this.animation = 'right';
+        }
+        else {
+            this.animation = 'left'
+        }
+
+    }
 }
 
-var Player = function (x, y, spriteName) {
-    Phaser.Sprite.call(this, game, x, y, spriteName);
-    game.physics.enable(this, Phaser.Physics.ARCADE);
+class Player extends Phaser.Sprite {
+    constructor(x, y, spriteName) {
+        super(game, x, y, spriteName);
+        game.physics.enable(this, Phaser.Physics.ARCADE);
 
-    this.health = 100;
-    this.lives = 3;
-
-    this.body.gravity.y = 600;
-    this.body.bounce.y = 0.2;
-    this.body.collideWorldBounds = true;
-    this.body.setSize(40,64,24);
-
-    this.animations.add('right', [0,1,2,3,4,5,6,7,8,9,10,11,12,13], 50);
-    this.animations.add('fire-right', [14,15,16,17], 30);
-    this.animations.add('walk-fire-right', [18, 19,20,21,22,23,24,25,26,27,28,29,30], 50);
-    this.animations.add('idle-right', [31,32,33,34,35,36,37,38], 10);
-    this.animations.add('left', [39,40,41,42,43,44,45,46,47,48,49,50,51,52], 50);
-    this.animations.add('fire-left', [53,54,55,56], 30);
-    this.animations.add('walk-fire-left', [57,58,59,60,61,62,63,64,65,66,67,68,69], 50);
-    this.animations.add('idle-left', [70,71,72,73,74,75,76,77], 10);
-    this.animations.add('attaked-left', [78,79], 5);
-    this.animations.add('attaked-right', [80,81], 5);
-
-    this.side = 'left';
-};
-
-Player.prototype = Object.create(Phaser.Sprite.prototype);
-Player.prototype.constructor = Player;
-
-Player.prototype.update = function() {
-
-    this.body.velocity.x = 0;
-    const velocity = 150;
-
-    if (fireButton.isDown && cursors.right.isDown) {
-        fireBullet(600, 50);
-        this.body.velocity.x = velocity;
-        this.animations.play('walk-fire-right');
-    }
-    else if (fireButton.isDown && cursors.left.isDown) {
-        fireBullet(-600, 40);
-        this.body.velocity.x = -velocity;
-        this.animations.play('walk-fire-left');
-    }
-    else if (cursors.left.isDown) {
-        //  Move to the left
-        this.body.velocity.x = -velocity;
-        this.animations.play('left');
-        this.side = 'left';
-    }
-    else if (cursors.right.isDown) {
-        //  Move to the right
-        this.body.velocity.x = velocity;
-        this.side = 'right';
-        this.animations.play('right');
-    }
-    else if (fireButton.isDown) {
-        this.side == 'right' ? fireBullet(600, 50) : fireBullet(-600, 40);
-        this.side == 'right' ? this.animations.play('fire-right') : this.animations.play('fire-left');
-    }
-    else {
-        //  Stand still
-        this.side == 'right' ? this.animations.play('idle-right') : this.animations.play('idle-left');
-    }
-
-    //  Allow the player to jump if they are touching the ground.
-
-    if ((cursors.up.isDown && this.body.blocked.down) || (cursors.up.isDown && this.body.touching.down)) {
-        this.body.velocity.y = -400;
-        cursors.up.isDown = false;
-        this.secondjump = true;
-    }
-    else if (cursors.up.isDown && this.secondjump) {
-        this.body.velocity.y = -400;
-        this.secondjump = false;
-    }
-
-    if (this.health < 1) {
-        this.kill();
-        this.reset(0,640);
         this.health = 100;
-        this.lives--;
-        if (this.lives == 0) {
-            clearInterval(addZombie);
-            playState.lose();
+        this.lives = 3;
+
+        this.body.gravity.y = 600;
+        this.body.bounce.y = 0.2;
+        this.body.collideWorldBounds = true;
+        this.body.setSize(40, 64, 24);
+
+        this.animations.add('right', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13], 50);
+        this.animations.add('fire-right', [14, 15, 16, 17], 30);
+        this.animations.add('walk-fire-right', [18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30], 50);
+        this.animations.add('idle-right', [31, 32, 33, 34, 35, 36, 37, 38], 10);
+        this.animations.add('left', [39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52], 50);
+        this.animations.add('fire-left', [53, 54, 55, 56], 30);
+        this.animations.add('walk-fire-left', [57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69], 50);
+        this.animations.add('idle-left', [70, 71, 72, 73, 74, 75, 76, 77], 10);
+        this.animations.add('attaked-left', [78, 79], 5);
+        this.animations.add('attaked-right', [80, 81], 5);
+
+        this.side = 'left';
+        this.bulletInterval = 150;
+    }
+
+    update() {
+        this.body.velocity.x = 0;
+        const velocity = 150;
+
+        if (fireButton.isDown && cursors.right.isDown) {
+            fireBullet(600, 50, this.bulletInterval);
+            this.body.velocity.x = velocity;
+            this.animations.play('walk-fire-right');
+        }
+        else if (fireButton.isDown && cursors.left.isDown) {
+            fireBullet(-600, 40, this.bulletInterval);
+            this.body.velocity.x = -velocity;
+            this.animations.play('walk-fire-left');
+        }
+        else if (cursors.left.isDown) {
+            this.body.velocity.x = -velocity;
+            this.animations.play('left');
+            this.side = 'left';
+        }
+        else if (cursors.right.isDown) {
+            this.body.velocity.x = velocity;
+            this.side = 'right';
+            this.animations.play('right');
+        }
+        else if (fireButton.isDown) {
+            this.side == 'right' ? fireBullet(600, 50, this.bulletInterval) : fireBullet(-600, 40, this.bulletInterval);
+            this.side == 'right' ? this.animations.play('fire-right') : this.animations.play('fire-left');
+        }
+        else {
+            this.side == 'right' ? this.animations.play('idle-right') : this.animations.play('idle-left');
+        }
+
+        if ((cursors.up.isDown && this.body.blocked.down) || (cursors.up.isDown && this.body.touching.down)) {
+            this.body.velocity.y = -400;
+            cursors.up.isDown = false;
+            this.secondjump = true;
+        }
+        else if (cursors.up.isDown && this.secondjump) {
+            this.body.velocity.y = -400;
+            this.secondjump = false;
+        }
+
+        if (this.health < 1) {
+            this.kill();
+            this.reset(0, 640);
+            this.health = 100;
+            this.lives--;
+            if (this.lives == 0) {
+                playState.lose();
+            }
         }
     }
-
-};
-
-function Blood(x, y) {
-    Phaser.Sprite.call(this, game, x, y, 'blood');
-    this.animations.add('blood', [0,1,2,3,4,5], 10);
-    this.animations.play('blood');
 }
-Blood.prototype = Object.create(Phaser.Sprite.prototype);
-Blood.prototype.constructor = Blood;
 
-function Aid(x, y) {
-    Phaser.Sprite.call(this, game, x, y, 'aid');
-    game.physics.enable(this, Phaser.Physics.ARCADE);
-    this.animations.add('aid', [0, 1, 2, 3, 4, 5], 10);
-    this.animations.play('aid');
-
-    this.body.gravity.y = 300;
-    this.body.bounce.y = 0.5;
-    this.body.collideWorldBounds = true;
+class Blood extends Phaser.Sprite {
+    constructor(x, y, sprite) {
+        super(game, x, y, sprite);
+        this.animations.add('blood', [0, 1, 2, 3, 4, 5], 10);
+        this.animations.play('blood');
+    }
 }
-Aid.prototype = Object.create(Phaser.Sprite.prototype);
-Aid.prototype.constructor = Aid;
 
-function createBlood(x,y) {
-    var temp = new Blood(x,y);
+class Aid extends Phaser.Sprite {
+    constructor(x, y, sprite, hp) {
+        super(game, x, y, sprite);
+        game.physics.enable(this, Phaser.Physics.ARCADE);
+        this.animations.add('aid', [0, 1, 2, 3, 4, 5], 10);
+        this.animations.play('aid');
+
+        this.body.gravity.y = 300;
+        this.body.bounce.y = 0.5;
+        this.body.collideWorldBounds = true;
+
+        this.hp = hp;
+    }
+}
+
+function createBlood(x, y, sprite) {
+    var temp = new Blood(x, y, sprite);
     blood.add(temp);
     setTimeout(() => {
         temp.kill();
@@ -300,26 +342,34 @@ function createBlood(x,y) {
 
 var count = 0;
 
-function addEnemie() {
-    temp = new Enemy(player.body.center.x - 200, player.body.center.y - 350, 'enemy', 80, count);
-    enemies.add(temp);
-    count++;
+function addEnemie(x, y) {
+    x = x || player.body.center.x - 200;
+    y = y || player.body.center.y - 350;
+    let level = 0,
+        scoreLimit = 1000;
+
+    level = Math.floor(score/scoreLimit);
+    if (level > 3) {
+        level = 3;
+    }
+
+    player.bulletInterval = 200/(0.25*level+1);
+
+    let character = enemyCharacter[Math.round(level*(1 - Math.random()))];
+
+    let enemy = new Enemy(x, y, character.sprite, character.velocity, character.velocityY, character.health, character.score);
+    enemies.add(enemy);
 }
 
 var bulletTime = 0;
 
-function fireBullet(bulletSpead, x) {
-
-    //  To avoid them being allowed to fire too fast we set a time limit
+function fireBullet(bulletSpead, x, bulletInterval) {
     if (game.time.now > bulletTime) {
-        //  Grab the first bullet we can from the pool
         bullet = bullets.getFirstExists(false);
-
         if (bullet) {
-            //  And fire it
             bullet.reset(player.x + x, player.y + 40);
             bullet.body.velocity.x = bulletSpead;
-            bulletTime = game.time.now + 200;
+            bulletTime = game.time.now + bulletInterval;
             shoot.play();
         }
     }
@@ -328,8 +378,7 @@ function fireBullet(bulletSpead, x) {
 
 function killEnemy(bullet, enemy) {
     enemy.health--;
-    createBlood(enemy.x + 0, enemy.y + 18);
-
+    createBlood(enemy.x + 0, enemy.y + 18, 'blood');
 
     if (enemy.body.touching.left) {
         enemy.curentVelocity = -enemy.velocity;
@@ -351,7 +400,7 @@ function killEnemy(bullet, enemy) {
         enemy.kill();
         enemyDead.play();
         enemiesCount++;
-        score += 10;
+        score += enemy.score;
     }
 };
 
@@ -359,16 +408,28 @@ function hitCoin(player, coin) {
     coin.kill();
     pping.play();
     coinsCount++;
-    score += 5;
+    score += 20;
 }
 
 function destroyBox(bullet, box) {
     box.kill();
     bullet.kill();
     shoot.play();
+    
+    let temp = Math.random();
 
-    var boom = new Enemy(box.body.x, box.body.y - 30, 'enemy', 80, count);
-    enemies.add(boom);
+    if (temp > 0.2) {
+        addEnemie(box.x, box.y - 15);
+    }
+    else if(temp > 0.1 ) {
+        let aid = new Aid(box.x, box.y, 'aid', 5);
+        aid.scale.setTo(0.5, 0.5);
+        aids.add(aid);
+        createAid = false;
+    }
+    else {
+        createBlood(box.x, box.y, 'bloodBox');
+    }
 }
 
 function killBullet(bullet, tile) {
@@ -396,7 +457,7 @@ function playerAttacked(player, enemy) {
     if (enemy.body.touching.up) {
         enemy.kill();
         enemyDead.play();
-        createBlood(enemy.x + 0, enemy.y + 18);
+        createBlood(enemy.x + 0, enemy.y + 18, 'blood');
         enemiesCount++;
         score += 10;     
     }
@@ -406,7 +467,7 @@ function playerAttacked(player, enemy) {
         enemy.kill();
         enemyDead.play();
         playSoundFull(ahh, 500);
-        createBlood(enemy.x + 0, enemy.y + 18);
+        createBlood(enemy.x + 0, enemy.y + 18, 'blood');
         enemiesCount++;
     }
     else {
@@ -425,9 +486,13 @@ function playSoundFull(sound, duration) {
 }
 
 var createAid = false;
-function addAid() {
+function addAid(x, y) {
+    x = x || player.x + 100 - 200 * Math.random();
+    y = y || player.y - 200 * Math.random();
+    let hp = 50;
+
     if (score % 500 < 15 && score != 0 && createAid) {
-        var aid = new Aid(player.x + 100 - 200 * Math.random(), player.y - 200 * Math.random());
+        var aid = new Aid(x, y, 'aid', hp);
             aids.add(aid);
             createAid = false;
     }
@@ -438,12 +503,13 @@ function addAid() {
 }
 
 function useAid(player, aid) {
-    player.health += 30;
+    player.health += aid.hp;
     if (player.health > 100) {
         player.health = 100;
     }
 
     aid.kill();
+    playSoundFull(useaid, 500);
 }
 
 function win() {

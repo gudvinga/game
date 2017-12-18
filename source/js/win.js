@@ -2,8 +2,12 @@ const winState = {
 
     create : function() {
         game.world.setBounds(0, 0, game.width, game.height);
-        nameLabel = game.add.text(game.world.centerX, game.world.centerY - 80, 'You WIN', { font: '30px Tahoma', fill: '#ffffff' });
-        background = game.add.sprite(0, 0, 'bg');
+        background = game.add.sprite(0, 0, 'bg-win');
+        restartButton = game.add.button(game.world.centerX - 100, game.world.centerY + 170, 'restartButton', actionOnClick, this, 0, 1);
+        
+        function actionOnClick() {
+            game.state.start('play');
+        }
     }
 
 }
