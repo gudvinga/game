@@ -20,7 +20,7 @@ a {
     box-sizing: border-box;
     width: 100%;
     max-width: 960px;
-    min-width: 640px;
+    min-width: 960px;
 }
 
 .header {
@@ -170,6 +170,12 @@ main section {
     padding: 0;
     height: auto;
     border-radius: 1rem;
+}
+
+.section_other img {
+    width: 50%;
+    height: auto;
+    border-radius: 50%;
 }
 
 #game {
