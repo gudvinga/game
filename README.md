@@ -7,4 +7,4 @@ A hardcore RPG skillset, a vast map and thousand zombies await the unwary.
 
 try it — https://github.com/gudvinga/temporary  
 
-presrntation — http://slides.com/gudvinga/game#/  
+presentation — http://slides.com/gudvinga/game#/  
