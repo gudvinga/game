@@ -99,12 +99,12 @@ const playState = {
         bullets.setAll('outOfBoundsKill', true);
         bullets.setAll('checkWorldBounds', true);
 
-        blood = game.add.group();
         aids = game.add.group();
 
         player = new Player(0, 640, 'player');
         game.world.add(player);
         enemies = game.add.group();
+        blood = game.add.group();
 
         const fontStyle = { font: "20px Arial", fill: "#ffffff", align: "left" };
 
