@@ -1,7 +1,7 @@
 {
-  "main.css": "static/css/main.54c42920.css",
-  "main.css.map": "static/css/main.54c42920.css.map",
-  "main.js": "static/js/main.a20018b6.js",
-  "main.js.map": "static/js/main.a20018b6.js.map",
-  "static\\media\\fontello.woff": "static/media/fontello.0aed44ff.woff"
+  "main.css": "./static/css/main.54c42920.css",
+  "main.css.map": "./static/css/main.54c42920.css.map",
+  "main.js": "./static/js/main.a20018b6.js",
+  "main.js.map": "./static/js/main.a20018b6.js.map",
+  "static\\media\\fontello.woff": "./static/media/fontello.0aed44ff.woff"
 }
